@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Crown Appliances — Field Diagnostics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F3EF;
+    --ink:#181B19;
+    --muted:#6C7069;
+    --panel:#1E2B29;
+    --panel-ink:#EDEFEC;
+    --accent:#E8A33D;
+    --accent-ink:#3A2200;
+    --success:#3F7D58;
+    --success-bg:#E7F0E9;
+    --line:#D7D6CC;
+    --card:#FFFFFF;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .app-shell{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+    box-shadow:0 0 0 1px var(--line);
+  }
+  .topbar{
+    background:var(--panel);
+    color:var(--panel-ink);
+    padding:14px 20px 12px;
+  }
+  .brand{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.09em;
+    text-transform:uppercase;
+    color:#B9C4C0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .unit-strip{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--panel-ink);
+    display:none;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .unit-strip.show{display:flex;}
+  .unit-strip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  .progress{
+    display:flex;
+    gap:5px;
+    margin-top:12px;
+  }
+  .progress .seg{
+    height:3px;
+    flex:1;
+    background:#3A4B47;
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress .seg.on{background:var(--accent);}
+
+  main{flex:1;padding:28px 20px 24px;display:flex;flex-direction:column;}
+  .step{display:none;flex-direction:column;flex:1;animation:fade .25s ease;}
+  .step.active{display:flex;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .eyebrow{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    font-size:12px;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    line-height:1.1;
+    margin:0 0 8px;
+  }
+  .sub{font-size:15px;color:var(--muted);margin:0 0 24px;line-height:1.5;}
+
+  .scan-btn{
+    width:100%;
+    background:var(--panel);
+    color:var(--panel-ink);
+    border:none;
+    border-radius:var(--radius);
+    padding:16px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;
+    font-size:17px;
+    letter-spacing:0.02em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    cursor:pointer;
+  }
+  .scan-btn:active{transform:scale(0.98);}
+  .or-line{
+    display:flex;align-items:center;gap:12px;margin:20px 0;
+    color:var(--muted);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;
+  }
+  .or-line::before,.or-line::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .field-row{display:flex;gap:8px;}
+  input[type=text]{
+    flex:1;
+    border:1px solid var(--line);
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:16px;
+    color:var(--ink);
+    text-transform:uppercase;
+  }
+  input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .lookup-btn{
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--bg);
+    border-radius:var(--radius);
+    padding:0 18px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;}
+  .error-msg{
+    margin-top:14px;
+    padding:12px 14px;
+    background:#FBEFE3;
+    border-left:3px solid var(--accent);
+    border-radius:0;
+    font-size:13px;
+    color:#5A3A0E;
+    display:none;
+  }
+  .error-msg.show{display:block;}
+
+  .symptom-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .symptom-btn{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 12px;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-height:96px;
+  }
+  .symptom-btn:hover{border-color:var(--ink);}
+  .symptom-btn:active{transform:scale(0.98);}
+  .symptom-btn .ic{font-size:20px;}
+  .symptom-btn .lbl{font-size:14px;font-weight:500;line-height:1.3;}
+
+  .qa-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .qa-card p{font-size:16px;margin:0 0 18px;line-height:1.5;}
+  .qa-btn{
+    width:100%;
+    text-align:left;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    font-size:15px;
+    margin-bottom:8px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .qa-btn:hover{border-color:var(--ink);}
+  .back-link{
+    margin-top:16px;
+    background:none;border:none;
+    color:var(--muted);
+    font-size:13px;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:0;
+    align-self:flex-start;
+  }
+
+  .tag{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 20px 20px;
+    position:relative;
+    margin-top:4px;
+  }
+  .tag::before{
+    content:'';
+    position:absolute;
+    top:-8px;left:50%;
+    transform:translateX(-50%);
+    width:16px;height:16px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:50%;
+  }
+  .tag .cause-label{font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:500;}
+  .tag .cause{font-size:17px;font-weight:600;margin:4px 0 16px;line-height:1.35;}
+  .tag .divider{border-top:2px dashed var(--line);margin:0 0 16px;}
+  .tag .part-label{font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;}
+  .tag .part-code{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .tag .part-name{font-size:14px;color:var(--muted);margin-top:2px;}
+  .tag .tip{
+    margin-top:16px;
+    font-size:13px;
+    color:var(--muted);
+    background:var(--bg);
+    padding:10px 12px;
+    border-radius:var(--radius);
+  }
+
+  .order-btn{
+    margin-top:18px;
+    width:100%;
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    border-radius:var(--radius);
+    padding:16px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    cursor:pointer;
+  }
+  .order-btn:active{transform:scale(0.98);}
+  .confirm-strip{
+    display:none;
+    margin-top:10px;
+    background:var(--success-bg);
+    color:var(--success);
+    padding:12px 14px;
+    border-radius:var(--radius);
+    font-size:13px;
+    font-weight:500;
+  }
+  .confirm-strip.show{display:block;}
+  .retry-link{
+    margin-top:14px;
+    background:none;border:none;
+    color:var(--ink);
+    font-size:14px;
+    text-decoration:underline;
+    cursor:pointer;
+    align-self:flex-start;
+    padding:0;
+  }
+
+  footer{padding:14px 20px 22px;border-top:1px solid var(--line);}
+  .log-toggle{
+    background:none;border:none;color:var(--muted);
+    font-size:12px;cursor:pointer;padding:0;
+    text-decoration:underline;
+  }
+  .log-panel{
+    display:none;
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px 12px;
+    line-height:1.6;
+    max-height:120px;
+    overflow-y:auto;
+  }
+  .log-panel.show{display:block;}
+  .log-panel div{border-bottom:1px dotted var(--line);padding:3px 0;}
+  .log-panel div:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <span>Crown Appliances · Field Diagnostics</span>
+      <span>Pilot</span>
+    </div>
+    <div class="unit-strip" id="unitStrip">
+      <span class="dot"></span>
+      <span id="unitStripText"></span>
+    </div>
+    <div class="progress">
+      <div class="seg on" id="seg1"></div>
+      <div class="seg" id="seg2"></div>
+      <div class="seg" id="seg3"></div>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- STEP 1: IDENTIFY -->
+    <section class="step active" id="step-identify">
+      <p class="eyebrow">Start here</p>
+      <h1>What's the unit?</h1>
+      <p class="sub">Scan the tag on the appliance, or enter the model number by hand.</p>
+
+      <button class="scan-btn" id="scanBtn">
+        <span>&#128247;</span> Scan unit tag
+      </button>
+
+      <div class="or-line">or enter manually</div>
+
+      <div class="field-row">
+        <input type="text" id="modelInput" placeholder="e.g. CR-2400" maxlength="10">
+        <button class="lookup-btn" id="lookupBtn">Look up</button>
+      </div>
+      <p class="hint">Pilot models: CR-1800, CR-2400, CR-3000</p>
+      <div class="error-msg" id="errorMsg">Model not in the pilot set yet. Try CR-1800, CR-2400, or CR-3000.</div>
+    </section>
+
+    <!-- STEP 2: SYMPTOM -->
+    <section class="step" id="step-symptom">
+      <p class="eyebrow">Step 2 of 3</p>
+      <h1>What's going on?</h1>
+      <p class="sub">Pick the closest match. You can refine on the next screen.</p>
+      <div class="symptom-grid" id="symptomGrid"></div>
+    </section>
+
+    <!-- STEP 3: FOLLOWUP -->
+    <section class="step" id="step-followup">
+      <p class="eyebrow">Almost there</p>
+      <h1 id="followupTitle">One more thing</h1>
+      <div class="qa-card">
+        <p id="followupQuestion"></p>
+        <div id="followupOptions"></div>
+      </div>
+      <button class="back-link" id="backToSymptom">&larr; Choose a different symptom</button>
+    </section>
+
+    <!-- STEP 4: RESULT -->
+    <section class="step" id="step-result">
+      <p class="eyebrow">Step 3 of 3 · likely cause</p>
+      <div class="tag" id="resultTag">
+        <div class="cause-label">Probable cause</div>
+        <div class="cause" id="resultCause"></div>
+        <div class="divider"></div>
+        <div class="part-label">Part to order</div>
+        <div class="part-code" id="resultPartCode"></div>
+        <div class="part-name" id="resultPartName"></div>
+        <div class="tip" id="resultTip" style="display:none;"></div>
+      </div>
+      <button class="order-btn" id="orderBtn">Order this part</button>
+      <div class="confirm-strip" id="confirmStrip"></div>
+      <button class="retry-link" id="retryBtn">That's not it — try again</button>
+    </section>
+
+  </main>
+
+  <footer>
+    <button class="log-toggle" id="logToggle">What would this pilot track?</button>
+    <div class="log-panel" id="logPanel"></div>
+  </footer>
+
+</div>
+
+<script>
+// ---------- DATA ----------
+const MODELS = {
+  'CR-1800': {type:'Refrigerator', name:'Crown Appliances Refrigerator, CR-1800'},
+  'CR-2400': {type:'Refrigerator', name:'Crown Appliances Refrigerator, CR-2400'},
+  'CR-3000': {type:'Refrigerator', name:'Crown Appliances Refrigerator, CR-3000'},
+};
+
+const SYMPTOMS = [
+  {id:'cooling', ic:'&#10052;', lbl:'Not cooling'},
+  {id:'leaking', ic:'&#128167;', lbl:'Leaking water'},
+  {id:'noise', ic:'&#128266;', lbl:'Making noise'},
+  {id:'ice', ic:'&#129501;', lbl:'Ice maker not working'},
+  {id:'power', ic:'&#9889;', lbl:"Won't power on"},
+];
+
+const TREE = {
+  cooling: {
+    question: 'Do you hear the compressor running — a low hum from the back of the unit?',
+    options: [
+      {lbl:'No, silent', result:{cause:'Compressor start component has failed', part:'SPERE-CMP-4471', partName:'Compressor start relay kit'}},
+      {lbl:'Yes, it\'s running', next:{
+        question:'Is there frost buildup on the back panel inside the freezer?',
+        options:[
+          {lbl:'Yes, frosted', result:{cause:'Defrost heater or thermostat has failed', part:'SPERE-DEF-2209', partName:'Defrost heater assembly'}},
+          {lbl:'No frost', result:{cause:'Condenser fan not moving air across the coils', part:'SPERE-FAN-1187', partName:'Condenser fan motor', tip:'Check the coils for dust buildup before replacing — a quick clean sometimes resolves it.'}},
+        ]
+      }},
+    ]
+  },
+  leaking: {
+    question: 'Is the water pooling inside the unit, or underneath / outside it?',
+    options: [
+      {lbl:'Inside the fridge', result:{cause:'Defrost drain is clogged', part:'SPERE-DRN-0938', partName:'Defrost drain heater and tube kit'}},
+      {lbl:'Underneath or outside', result:{cause:'Water inlet valve or line connection is failing', part:'SPERE-VLV-1652', partName:'Water inlet valve'}},
+    ]
+  },
+  noise: {
+    question: 'Is the noise coming from the back of the unit, or from inside near the freezer?',
+    options: [
+      {lbl:'Back of the unit', result:{cause:'Condenser fan motor bearing is worn', part:'SPERE-FAN-1187', partName:'Condenser fan motor'}},
+      {lbl:'Inside, near freezer', result:{cause:'Evaporator fan motor is worn or obstructed', part:'SPERE-FAN-2044', partName:'Evaporator fan motor'}},
+    ]
+  },
+  ice: {
+    question: 'Is any ice forming at all, even slowly or in small clumps?',
+    options: [
+      {lbl:'No ice at all', result:{cause:'Water inlet valve is frozen or not opening', part:'SPERE-VLV-1652', partName:'Water inlet valve'}},
+      {lbl:'Some ice, just slow or small', result:{cause:'Ice maker module has failed', part:'SPERE-ICE-3315', partName:'Ice maker assembly'}},
+    ]
+  },
+  power: {
+    question: 'Does the interior light come on when you open the door?',
+    options: [
+      {lbl:'No light either', result:{cause:'No power reaching the unit', part:null, tip:'Check the outlet and cord before ordering anything — this usually isn\'t a parts issue.'}},
+      {lbl:'Yes, light works', result:{cause:'Main control board has failed', part:'SPERE-CTL-5502', partName:'Main control board'}},
+    ]
+  },
+};
+
+// ---------- STATE ----------
+let state = {model:null, symptom:null, path:[]};
+let sessionLog = [];
+
+// ---------- ELEMENTS ----------
+const steps = {
+  identify: document.getElementById('step-identify'),
+  symptom: document.getElementById('step-symptom'),
+  followup: document.getElementById('step-followup'),
+  result: document.getElementById('step-result'),
+};
+const segs = [document.getElementById('seg1'), document.getElementById('seg2'), document.getElementById('seg3')];
+const unitStrip = document.getElementById('unitStrip');
+const unitStripText = document.getElementById('unitStripText');
+
+function showStep(name, segCount){
+  Object.values(steps).forEach(s => s.classList.remove('active'));
+  steps[name].classList.add('active');
+  segs.forEach((s,i) => s.classList.toggle('on', i < segCount));
+}
+
+// ---------- STEP 1: IDENTIFY ----------
+const modelInput = document.getElementById('modelInput');
+const errorMsg = document.getElementById('errorMsg');
+
+function tryModel(raw){
+  const m = raw.trim().toUpperCase();
+  if(MODELS[m]){
+    state.model = m;
+    errorMsg.classList.remove('show');
+    unitStripText.textContent = MODELS[m].name;
+    unitStrip.classList.add('show');
+    renderSymptoms();
+    showStep('symptom', 1);
+  } else {
+    errorMsg.classList.add('show');
+  }
+}
+
+document.getElementById('lookupBtn').addEventListener('click', () => tryModel(modelInput.value));
+modelInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryModel(modelInput.value); });
+document.getElementById('scanBtn').addEventListener('click', () => {
+  const demoModels = Object.keys(MODELS);
+  const picked = demoModels[Math.floor(Math.random()*demoModels.length)];
+  modelInput.value = picked;
+  tryModel(picked);
+});
+
+// ---------- STEP 2: SYMPTOM ----------
+const symptomGrid = document.getElementById('symptomGrid');
+function renderSymptoms(){
+  symptomGrid.innerHTML = '';
+  SYMPTOMS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'symptom-btn';
+    btn.innerHTML = `<span class="ic">${s.ic}</span><span class="lbl">${s.lbl}</span>`;
+    btn.addEventListener('click', () => {
+      state.symptom = s.id;
+      state.path = [];
+      renderFollowup(TREE[s.id]);
+      showStep('followup', 2);
+    });
+    symptomGrid.appendChild(btn);
+  });
+}
+
+// ---------- STEP 3: FOLLOWUP ----------
+const followupQuestion = document.getElementById('followupQuestion');
+const followupOptions = document.getElementById('followupOptions');
+
+function renderFollowup(node){
+  followupQuestion.textContent = node.question;
+  followupOptions.innerHTML = '';
+  node.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'qa-btn';
+    btn.textContent = opt.lbl;
+    btn.addEventListener('click', () => {
+      state.path.push(opt.lbl);
+      if(opt.next){
+        renderFollowup(opt.next);
+      } else {
+        renderResult(opt.result);
+        showStep('result', 3);
+      }
+    });
+    followupOptions.appendChild(btn);
+  });
+}
+
+document.getElementById('backToSymptom').addEventListener('click', () => showStep('symptom', 1));
+
+// ---------- STEP 4: RESULT ----------
+const resultCause = document.getElementById('resultCause');
+const resultPartCode = document.getElementById('resultPartCode');
+const resultPartName = document.getElementById('resultPartName');
+const resultTip = document.getElementById('resultTip');
+const orderBtn = document.getElementById('orderBtn');
+const confirmStrip = document.getElementById('confirmStrip');
+
+function renderResult(result){
+  resultCause.textContent = result.cause;
+  confirmStrip.classList.remove('show');
+
+  if(result.part){
+    resultPartCode.textContent = result.part;
+    resultPartName.textContent = result.partName;
+    orderBtn.style.display = 'block';
+  } else {
+    resultPartCode.textContent = 'No part needed yet';
+    resultPartName.textContent = '';
+    orderBtn.style.display = 'none';
+  }
+
+  if(result.tip){
+    resultTip.textContent = result.tip;
+    resultTip.style.display = 'block';
+  } else {
+    resultTip.style.display = 'none';
+  }
+
+  sessionLog.unshift({
+    model: state.model,
+    symptom: state.symptom,
+    cause: result.cause,
+    part: result.part || '—',
+    time: new Date().toLocaleTimeString()
+  });
+  renderLog();
+}
+
+orderBtn.addEventListener('click', () => {
+  confirmStrip.textContent = `Order would open in Chadwell's ordering system with part ${resultPartCode.textContent} pre-filled for model ${state.model}.`;
+  confirmStrip.classList.add('show');
+});
+
+document.getElementById('retryBtn').addEventListener('click', () => {
+  renderFollowup(TREE[state.symptom]);
+  showStep('followup', 2);
+});
+
+// ---------- LOG PANEL ----------
+const logPanel = document.getElementById('logPanel');
+document.getElementById('logToggle').addEventListener('click', () => {
+  logPanel.classList.toggle('show');
+});
+function renderLog(){
+  if(sessionLog.length === 0){
+    logPanel.innerHTML = '<div>No sessions yet this demo.</div>';
+    return;
+  }
+  logPanel.innerHTML = sessionLog.map(l =>
+    `<div>${l.time} — ${l.model} — ${l.symptom} — part ${l.part}</div>`
+  ).join('');
+}
+renderLog();
+</script>
+</body>
+</html>

@@ -187,6 +187,106 @@
   .symptom-btn .ic{font-size:20px;}
   .symptom-btn .lbl{font-size:14px;font-weight:500;line-height:1.3;}
 
+  .reader-card{
+    background:var(--panel);
+    color:var(--panel-ink);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:18px;
+  }
+  .reader-card-head{display:flex;gap:12px;align-items:flex-start;}
+  .reader-ic{font-size:22px;line-height:1;flex-shrink:0;}
+  .reader-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:17px;letter-spacing:0.01em;}
+  .reader-card-sub{font-size:13px;color:#AEB8B4;margin-top:4px;line-height:1.4;}
+  .reader-btn{
+    width:100%;
+    margin-top:14px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    border-radius:var(--radius);
+    padding:13px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .reader-btn:active{transform:scale(0.98);}
+
+  .reader-status{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .spinner{
+    width:16px;height:16px;
+    border-radius:50%;
+    border:2px solid var(--line);
+    border-top-color:var(--accent);
+    animation:spin 0.8s linear infinite;
+    flex-shrink:0;
+  }
+  .spinner.done{border:none;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .reader-status-text{font-size:14px;color:var(--muted);}
+
+  .reader-console{
+    background:var(--panel);
+    color:#B9C4C0;
+    border-radius:var(--radius);
+    padding:14px 16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    line-height:1.9;
+    min-height:100px;
+  }
+  .reader-console .ln{opacity:0;animation:lnIn .3s ease forwards;}
+  .reader-console .ln.ok{color:var(--accent);}
+  @keyframes lnIn{from{opacity:0;transform:translateY(2px);}to{opacity:1;transform:translateY(0);}}
+
+  .fault-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    padding:6px 12px;
+    border-radius:20px;
+    margin:16px 0 4px;
+  }
+
+  .telemetry-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:14px;
+  }
+  .telemetry-tile{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+  }
+  .telemetry-tile.flag{border-color:var(--accent);background:#FBEFE3;}
+  .telemetry-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);}
+  .telemetry-value{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;margin-top:3px;}
+  .telemetry-tile.flag .telemetry-value{color:#5A3A0E;}
+
+  .source-strip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.02em;
+    color:var(--muted);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:4px 10px;
+    margin-bottom:14px;
+  }
+  .source-strip .sdot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;}
+
   .qa-card{
     background:var(--card);
     border:1px solid var(--line);
@@ -363,7 +463,43 @@
       <p class="eyebrow">Step 2 of 3</p>
       <h1>What's going on?</h1>
       <p class="sub">Pick the closest match. You can refine on the next screen.</p>
+
+      <div class="reader-card">
+        <div class="reader-card-head">
+          <span class="reader-ic">&#128268;</span>
+          <div>
+            <div class="reader-card-title">Have the Crown diagnostic reader?</div>
+            <div class="reader-card-sub">Plug it into the unit's service port for an instant fault read — no questions needed.</div>
+          </div>
+        </div>
+        <button class="reader-btn" id="connectReaderBtn">Connect diagnostic reader</button>
+      </div>
+
+      <div class="or-line">or answer a few questions</div>
+
       <div class="symptom-grid" id="symptomGrid"></div>
+    </section>
+
+    <!-- STEP 2b: DIAGNOSTIC READER -->
+    <section class="step" id="step-reader">
+      <p class="eyebrow">Diagnostic reader</p>
+      <h1 id="readerTitle">Connecting to unit&hellip;</h1>
+      <p class="sub">Plugged into the service port on <strong id="readerModelName"></strong>.</p>
+
+      <div class="reader-status" id="readerStatus">
+        <span class="spinner" id="readerSpinner"></span>
+        <span class="reader-status-text" id="readerStatusText">Establishing link&hellip;</span>
+      </div>
+
+      <div class="reader-console" id="readerConsole"></div>
+
+      <div id="faultChipWrap"></div>
+
+      <div class="telemetry-grid" id="telemetryGrid" style="display:none;"></div>
+
+      <button class="scan-btn" id="viewReaderResultBtn" style="display:none;margin-top:20px;">View diagnosis &rarr;</button>
+      <button class="reader-btn" id="runGuidedInsteadBtn" style="display:none;">Run guided questions instead</button>
+      <button class="back-link" id="backFromReader">&larr; Back</button>
     </section>
 
     <!-- STEP 3: FOLLOWUP -->
@@ -381,6 +517,7 @@
     <section class="step" id="step-result">
       <p class="eyebrow">Step 3 of 3 · likely cause</p>
       <div class="tag" id="resultTag">
+        <div class="source-strip" id="sourceStrip"><span class="sdot"></span><span id="sourceStripText"></span></div>
         <div class="cause-label">Probable cause</div>
         <div class="cause" id="resultCause"></div>
         <div class="divider"></div>
@@ -418,6 +555,41 @@ const SYMPTOMS = [
   {id:'ice', ic:'&#129501;', lbl:'Ice maker not working'},
   {id:'power', ic:'&#9889;', lbl:"Won't power on"},
 ];
+
+// Fault codes as they'd be read directly off the appliance's control board
+// by a physical diagnostic reader plugged into the service port.
+const FAULT_CODES = {
+  E1: {cause:'Compressor start component has failed', part:'SPERE-CMP-4471', partName:'Compressor start relay kit', desc:'Compressor circuit — no start signal detected'},
+  E2: {cause:'Defrost heater or thermostat has failed', part:'SPERE-DEF-2209', partName:'Defrost heater assembly', desc:'Defrost cycle — heater circuit open'},
+  E3: {cause:'Condenser fan not moving air across the coils', part:'SPERE-FAN-1187', partName:'Condenser fan motor', desc:'Condenser fan — rotation not detected', tip:'Check the coils for dust buildup before replacing — a quick clean sometimes resolves it.'},
+  E5: {cause:'Evaporator fan motor is worn or obstructed', part:'SPERE-FAN-2044', partName:'Evaporator fan motor', desc:'Evaporator fan — irregular current draw'},
+  E6: {cause:'Water inlet valve or line connection is failing', part:'SPERE-VLV-1652', partName:'Water inlet valve', desc:'Water valve — solenoid resistance out of range'},
+  E8: {cause:'Ice maker module has failed', part:'SPERE-ICE-3315', partName:'Ice maker assembly', desc:'Ice maker module — no response on module bus'},
+  E9: {cause:'Main control board has failed', part:'SPERE-CTL-5502', partName:'Main control board', desc:'Control board — internal self-test failure'},
+};
+
+// Baseline sensor telemetry a reader would pull from the unit; abnormalFields
+// lists which readings get flagged out-of-range for a given fault code, so the
+// telemetry panel visually matches the fault being reported.
+function readTelemetry(faultCode){
+  const base = [
+    {key:'cabinet', label:'Cabinet temp', value:'38°F', ok:'38°F', bad:'52°F'},
+    {key:'freezer', label:'Freezer temp', value:'0°F', ok:'0°F', bad:'19°F'},
+    {key:'amps', label:'Compressor draw', value:'2.1A', ok:'2.1A', bad:'0.0A'},
+    {key:'fan', label:'Condenser fan RPM', value:'1450', ok:'1450', bad:'0'},
+    {key:'defrost', label:'Last defrost cycle', value:'6h ago', ok:'6h ago', bad:'—'},
+    {key:'door', label:'Door open count (24h)', value:'14', ok:'14', bad:'14'},
+  ];
+  const abnormalFields = {
+    E1: ['amps'], E2: ['defrost', 'freezer'], E3: ['fan', 'cabinet'],
+    E5: ['freezer'], E6: [], E8: [], E9: ['cabinet', 'freezer'],
+  }[faultCode] || [];
+  return base.map(t => ({
+    label: t.label,
+    value: abnormalFields.includes(t.key) ? t.bad : t.ok,
+    flag: abnormalFields.includes(t.key),
+  }));
+}
 
 const TREE = {
   cooling: {
@@ -471,6 +643,7 @@ let sessionLog = [];
 const steps = {
   identify: document.getElementById('step-identify'),
   symptom: document.getElementById('step-symptom'),
+  reader: document.getElementById('step-reader'),
   followup: document.getElementById('step-followup'),
   result: document.getElementById('step-result'),
 };
@@ -529,6 +702,101 @@ function renderSymptoms(){
   });
 }
 
+// ---------- STEP 2b: DIAGNOSTIC READER ----------
+const readerConsole = document.getElementById('readerConsole');
+const readerStatus = document.getElementById('readerStatus');
+const readerSpinner = document.getElementById('readerSpinner');
+const readerStatusText = document.getElementById('readerStatusText');
+const readerModelName = document.getElementById('readerModelName');
+const readerTitle = document.getElementById('readerTitle');
+const faultChipWrap = document.getElementById('faultChipWrap');
+const telemetryGrid = document.getElementById('telemetryGrid');
+const viewReaderResultBtn = document.getElementById('viewReaderResultBtn');
+const runGuidedInsteadBtn = document.getElementById('runGuidedInsteadBtn');
+
+function readerLine(text, cls){
+  const div = document.createElement('div');
+  div.className = 'ln' + (cls ? ' ' + cls : '');
+  div.textContent = text;
+  readerConsole.appendChild(div);
+  readerConsole.scrollTop = readerConsole.scrollHeight;
+}
+
+function renderTelemetry(rows){
+  telemetryGrid.innerHTML = rows.map(r => `
+    <div class="telemetry-tile ${r.flag ? 'flag' : ''}">
+      <div class="telemetry-label">${r.label}</div>
+      <div class="telemetry-value">${r.value}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('connectReaderBtn').addEventListener('click', () => {
+  readerModelName.textContent = MODELS[state.model].name;
+  readerTitle.textContent = 'Connecting to unit…';
+  readerConsole.innerHTML = '';
+  faultChipWrap.innerHTML = '';
+  telemetryGrid.style.display = 'none';
+  telemetryGrid.innerHTML = '';
+  viewReaderResultBtn.style.display = 'none';
+  runGuidedInsteadBtn.style.display = 'none';
+  readerSpinner.className = 'spinner';
+  readerSpinner.textContent = '';
+  readerStatusText.textContent = 'Establishing link…';
+  showStep('reader', 2);
+
+  // ~15% of reads come back clean, to show the reader-plus-guided hybrid
+  const noFaultFound = Math.random() < 0.15;
+  const codes = Object.keys(FAULT_CODES);
+  const faultCode = codes[Math.floor(Math.random() * codes.length)];
+  state.readerFault = faultCode;
+
+  const script = [
+    () => readerLine('> Establishing link to service port…'),
+    () => readerLine(`> Link established — ${state.model} control board v3.2`, 'ok'),
+    () => readerLine('> Reading fault memory…'),
+    () => {
+      if(noFaultFound){
+        readerLine('> 0 active faults in memory', 'ok');
+        readerTitle.textContent = 'No active faults found';
+        readerStatusText.textContent = 'Fault memory clear';
+        readerSpinner.classList.add('done');
+        readerSpinner.textContent = '✓';
+        readerLine('> Pulling live sensor telemetry…');
+      } else {
+        readerLine(`> 1 active fault found: ${faultCode}`, 'ok');
+        readerTitle.textContent = 'Fault found';
+        readerStatusText.textContent = 'Read complete';
+        readerSpinner.classList.add('done');
+        readerSpinner.textContent = '✓';
+        readerLine('> Pulling live sensor telemetry…');
+      }
+    },
+    () => {
+      const rows = readTelemetry(noFaultFound ? null : faultCode);
+      renderTelemetry(rows);
+      telemetryGrid.style.display = 'grid';
+      if(!noFaultFound){
+        faultChipWrap.innerHTML = `<div class="fault-chip">&#9888; ${faultCode} — ${FAULT_CODES[faultCode].desc}</div>`;
+        viewReaderResultBtn.style.display = 'block';
+      } else {
+        runGuidedInsteadBtn.style.display = 'block';
+      }
+    },
+  ];
+
+  script.forEach((fn, i) => setTimeout(fn, i * 650));
+});
+
+viewReaderResultBtn.addEventListener('click', () => {
+  const result = FAULT_CODES[state.readerFault];
+  renderResult(result, {source:'reader', code: state.readerFault});
+  showStep('result', 3);
+});
+
+runGuidedInsteadBtn.addEventListener('click', () => showStep('symptom', 1));
+document.getElementById('backFromReader').addEventListener('click', () => showStep('symptom', 1));
+
 // ---------- STEP 3: FOLLOWUP ----------
 const followupQuestion = document.getElementById('followupQuestion');
 const followupOptions = document.getElementById('followupOptions');
@@ -545,7 +813,7 @@ function renderFollowup(node){
       if(opt.next){
         renderFollowup(opt.next);
       } else {
-        renderResult(opt.result);
+        renderResult(opt.result, {source:'guided'});
         showStep('result', 3);
       }
     });
@@ -562,10 +830,19 @@ const resultPartName = document.getElementById('resultPartName');
 const resultTip = document.getElementById('resultTip');
 const orderBtn = document.getElementById('orderBtn');
 const confirmStrip = document.getElementById('confirmStrip');
+const sourceStripText = document.getElementById('sourceStripText');
 
-function renderResult(result){
+function renderResult(result, meta){
+  meta = meta || {source:'guided'};
+  state.lastSource = meta.source;
   resultCause.textContent = result.cause;
   confirmStrip.classList.remove('show');
+
+  if(meta.source === 'reader'){
+    sourceStripText.textContent = `Read from unit · Fault ${meta.code}`;
+  } else {
+    sourceStripText.textContent = 'Guided Q&A · ' + state.path.join(' → ');
+  }
 
   if(result.part){
     resultPartCode.textContent = result.part;
@@ -586,7 +863,8 @@ function renderResult(result){
 
   sessionLog.unshift({
     model: state.model,
-    symptom: state.symptom,
+    symptom: meta.source === 'reader' ? `reader fault ${meta.code}` : state.symptom,
+    source: meta.source,
     cause: result.cause,
     part: result.part || '—',
     time: new Date().toLocaleTimeString()
@@ -600,8 +878,12 @@ orderBtn.addEventListener('click', () => {
 });
 
 document.getElementById('retryBtn').addEventListener('click', () => {
-  renderFollowup(TREE[state.symptom]);
-  showStep('followup', 2);
+  if(state.lastSource === 'reader'){
+    showStep('symptom', 1);
+  } else {
+    renderFollowup(TREE[state.symptom]);
+    showStep('followup', 2);
+  }
 });
 
 // ---------- LOG PANEL ----------
@@ -615,7 +897,7 @@ function renderLog(){
     return;
   }
   logPanel.innerHTML = sessionLog.map(l =>
-    `<div>${l.time} — ${l.model} — ${l.symptom} — part ${l.part}</div>`
+    `<div>${l.time} — ${l.model} — [${l.source}] ${l.symptom} — part ${l.part}</div>`
   ).join('');
 }
 renderLog();

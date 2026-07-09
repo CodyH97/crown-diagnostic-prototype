@@ -9,7 +9,7 @@ Enter or "scan" a Crown Appliances refrigerator model number, then diagnose it o
 
 The result screen always shows a source badge (`Read from unit · Fault E8` vs `Guided Q&A · <path>`) and the session log at the bottom tags each entry with `[reader]` or `[guided]`, so the pitch can call out which path a tech used.
 
-**Live demo:** replace with your GitHub Pages URL once deployed, e.g. `https://YOUR-USERNAME.github.io/REPO-NAME/`
+**[Live demo](https://codyh97.github.io/crown-diagnostic-prototype/)** 
 
 ## Pilot models
 - CR-1800
